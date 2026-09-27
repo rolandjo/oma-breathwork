@@ -1,0 +1,190 @@
+{
+  "schemaVersion": 1,
+  "id": "roland.breathwork",
+  "name": "Breathwork",
+  "version": "1.0.0",
+  "author": "Roland",
+  "license": "MIT",
+  "description": "A customizable guided-breathing pacer for Omarchy with built-in and named personal protocols, session tracking, and a daily streak.",
+  "kinds": [
+    "bar-widget",
+    "overlay"
+  ],
+  "keepLoaded": true,
+  "entryPoints": {
+    "barWidget": "BarWidget.qml",
+    "overlay": "BreathworkOverlay.qml"
+  },
+  "barWidget": {
+    "displayName": "Breathwork",
+    "description": "Start a guided-breathing session with preset or personal phase timings.",
+    "category": "Wellness",
+    "aliases": [
+      "breathwork",
+      "meditation",
+      "breathe",
+      "breathing",
+      "mindfulness",
+      "box breathing",
+      "4-7-8",
+      "equal breathing",
+      "extended exhale",
+      "triangle breathing",
+      "power breathe",
+      "Wim Hof breathing",
+      "custom breathing",
+      "protocol editor"
+    ],
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "pattern": "box",
+      "minutes": 10,
+      "getReadySeconds": 5,
+      "visualStyle": "orb",
+      "powerRounds": 3,
+      "powerBreaths": 30,
+      "powerBreathSeconds": 3,
+      "powerRecoveryHold": 10,
+      "powerRecoveryIncrease": 5,
+      "bell": true,
+      "phaseCues": true,
+      "dnd": true,
+      "customIn": 4,
+      "customHoldIn": 2,
+      "customOut": 6,
+      "customHoldOut": 0
+    },
+    "schema": [
+      {
+        "key": "bell",
+        "type": "boolean",
+        "label": "Bell at session start and end",
+        "defaultValue": true
+      },
+      {
+        "key": "dnd",
+        "type": "boolean",
+        "label": "Do not disturb during sessions",
+        "defaultValue": true
+      },
+      {
+        "key": "phaseCues",
+        "type": "boolean",
+        "label": "Short audio cue at the beginning of each breathing phase",
+        "defaultValue": true
+      },
+      {
+        "key": "pattern",
+        "type": "string",
+        "label": "Default breathing pattern (box, 478, coherent, equal, extended, triangle, power, custom)",
+        "defaultValue": "box"
+      },
+      {
+        "key": "minutes",
+        "type": "integer",
+        "label": "Default session length (minutes)",
+        "min": 1,
+        "max": 120,
+        "step": 1,
+        "defaultValue": 10
+      },
+      {
+        "key": "getReadySeconds",
+        "type": "integer",
+        "label": "Get ready countdown before each session (seconds)",
+        "min": 0,
+        "max": 30,
+        "step": 1,
+        "defaultValue": 5
+      },
+      {
+        "key": "visualStyle",
+        "type": "string",
+        "label": "Session visual (orb, rings, bar)",
+        "defaultValue": "orb"
+      },
+      {
+        "key": "powerRounds",
+        "type": "integer",
+        "label": "Power Breathe: rounds",
+        "min": 1,
+        "max": 20,
+        "step": 1,
+        "defaultValue": 3
+      },
+      {
+        "key": "powerBreaths",
+        "type": "integer",
+        "label": "Power Breathe: breaths per round",
+        "min": 30,
+        "max": 40,
+        "step": 1,
+        "defaultValue": 30
+      },
+      {
+        "key": "powerBreathSeconds",
+        "type": "integer",
+        "label": "Power Breathe: seconds per breath",
+        "min": 2,
+        "max": 5,
+        "step": 1,
+        "defaultValue": 3
+      },
+      {
+        "key": "powerRecoveryHold",
+        "type": "integer",
+        "label": "Power Breathe: first recovery hold seconds",
+        "min": 5,
+        "max": 30,
+        "step": 1,
+        "defaultValue": 10
+      },
+      {
+        "key": "powerRecoveryIncrease",
+        "type": "integer",
+        "label": "Power Breathe: recovery hold increase per round",
+        "min": 0,
+        "max": 15,
+        "step": 1,
+        "defaultValue": 5
+      },
+      {
+        "key": "customIn",
+        "type": "integer",
+        "label": "Custom protocol: inhale seconds",
+        "min": 1,
+        "max": 30,
+        "step": 1,
+        "defaultValue": 4
+      },
+      {
+        "key": "customHoldIn",
+        "type": "integer",
+        "label": "Custom protocol: hold after inhale seconds",
+        "min": 0,
+        "max": 30,
+        "step": 1,
+        "defaultValue": 2
+      },
+      {
+        "key": "customOut",
+        "type": "integer",
+        "label": "Custom protocol: exhale seconds",
+        "min": 1,
+        "max": 30,
+        "step": 1,
+        "defaultValue": 6
+      },
+      {
+        "key": "customHoldOut",
+        "type": "integer",
+        "label": "Custom protocol: hold after exhale seconds",
+        "min": 0,
+        "max": 30,
+        "step": 1,
+        "defaultValue": 0
+      }
+    ]
+  }
+}

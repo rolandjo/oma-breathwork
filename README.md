@@ -17,19 +17,19 @@ choice is saved and applies to every breathing protocol.
 
 **Bar icon and practice summary**
 
-![Bar icon and practice summary](docs/screenshots/bar-tooltip.png)
+![Bar icon and practice summary](docs/screenshots/bar-tooltip-v2.png)
 
 **Protocol selection and weekly practice history**
 
-![Protocol selection and weekly practice history](docs/screenshots/protocol-selector.png)
+![Protocol selection and weekly practice history](docs/screenshots/protocol-selector-v2.png)
 
 **Personal protocol editor, visuals, and audio settings**
 
-![Personal protocol editor, visuals, and audio settings](docs/screenshots/protocol-settings.png)
+![Personal protocol editor, visuals, and audio settings](docs/screenshots/protocol-settings-v2.png)
 
 **Power Breathe rounds and timed hold settings**
 
-![Power Breathe rounds and timed hold settings](docs/screenshots/power-breathe-settings.png)
+![Power Breathe rounds and timed hold settings](docs/screenshots/power-breathe-settings-v2.png)
 
 ## Installation
 
@@ -273,7 +273,7 @@ o.bind("SUPER + SHIFT + B", "Breathwork",
 
 ## License
 
-MIT. Based on Zen for Omarchy by Luo Tao.
+MIT. Copyright (c) 2026 Luo Tao (upstream [Zen for Omarchy](https://github.com/ya-luotao/omarchy-zen)); Copyright (c) 2026 Roland Jo (current maintainer).
 
 ## Development checks
 

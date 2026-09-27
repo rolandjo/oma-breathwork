@@ -96,6 +96,7 @@ comfortably without forcing depth or duration. See the
 | **Extended exhale** (`extended`) | Inhale 4, exhale 6, with no holds. | A way to explore a longer, unforced exhale during a relaxing break. |
 | **Triangle breathing** (`triangle`) | Inhale 4, hold 4, exhale 4; no hold after exhale. | A three-step focus exercise for people who prefer to omit the empty-lung pause. |
 | **Power Breathe** (`power`) | Repeated breaths, timed exhale hold, recovery inhale and hold, then release. Settings control rounds, pace, and hold progression. | Guided counting and round tracking for a more intense practice. Benefits of this exact configurable sequence are not established; it has additional risks described below. |
+| **Physiological Sigh** (`sigh`) | Inhale 3, top-up inhale 1 without exhaling, then exhale 6; no holds. | A physiological-sigh pattern for a brief calming practice; these timings are adjustable app defaults, not a medically prescribed ratio. |
 | **Custom** (`custom`) | Default: inhale 4, hold 2, exhale 6, hold 0; adjustable timings. | Adapt the rhythm to comfortable durations, including removing holds. Custom timing is not medically validated. |
 | **Named personal protocols** (`saved:…`) | Saved inhale, hold, exhale, and hold timings under a chosen name. | Reuse a preferred comfortable rhythm consistently without entering the settings again. |
 
@@ -111,6 +112,28 @@ exhale holds of 10, 15, and 20 seconds. Each hold counts down and automatically
 advances to the recovery inhale. Press **Space** or **Enter** (or choose
 **End hold early**) to continue sooner. The recovery hold after inhale has its
 own setting and stays the same on every round.
+
+### Coherent breathing
+
+Video reference: [Coherent breathing — reference video](https://www.youtube.com/watch?v=Vi0_7idqcFI).
+
+The plugin preset uses a 5.5-second inhale and a 5.5-second exhale, with no holds.
+
+### Physiological Sigh
+
+Choose **Physiological Sigh** in the protocol selector. Follow the first inhale,
+take a shorter second inhale without breathing out between them, then exhale
+slowly. The visual expands in two steps and each step has its own audio cue.
+The app repeats a 3-second inhale, 1-second top-up, and 6-second exhale for the
+selected session duration. To change those timings, open **Protocol settings**,
+edit **Inhale**, **Second inhale**, and **Exhale**, and save a named version.
+Setting the second inhale to zero disables that extra phase in personal protocols.
+
+Video reference: [Physiological Sigh — reference video](https://www.youtube.com/watch?v=kSZKIupBUuc).
+[Stanford Medicine describes the physiological sigh](https://med.stanford.edu/news/insights/2020/10/how-stress-affects-your-brain-and-how-to-reverse-it)
+as two nasal inhales followed by an extended mouth exhale. The numeric timings
+above are this plugin's pacing choices. Keep the breaths comfortable and stop
+if you feel unwell; see the disclaimer below.
 
 ## Health disclaimer and safe use
 

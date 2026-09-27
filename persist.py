@@ -25,6 +25,8 @@ def validate_library(value):
         if not isinstance(key, str) or not key or key in seen or not isinstance(name, str) or not name.strip():
             raise ValueError("Invalid or duplicate protocol ID/name")
         seen.add(key)
+        if "topUp" in record and (not number(record["topUp"]) or not 0 <= record["topUp"] <= 30):
+            raise ValueError("Invalid second inhale duration")
         for field in ("inhale", "holdIn", "exhale", "holdOut"):
             duration = record.get(field)
             if not number(duration) or not (1 if field in ("inhale", "exhale") else 0) <= duration <= 30:

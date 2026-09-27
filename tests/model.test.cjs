@@ -102,4 +102,24 @@ test('ordinary protocol tooltips describe actual built-in, custom, and saved tim
   const saved = model.saveProtocol(empty(), draft('Saved'));
   assert.ok(model.protocolDescription(model.recordPattern(saved.record)).includes('Breathe out: 5.5 sec'));
 });
+test('double inhale preserves intermediate fullness through payload and saved copies', () => {
+  const sigh = model.pattern('sigh');
+  assert.equal(model.cycleSeconds(sigh), 10);
+  const payload = model.pattern('sigh', {patternData: JSON.parse(JSON.stringify(sigh))});
+  assert.equal(payload.phases[0].to, 0.8);
+  assert.equal(model.breathAt(payload, 3).phaseIndex, 1);
+  assert.equal(model.breathAt(payload, 3).fullness, 0.8);
+  assert.ok(model.breathAt(payload, 3.5).fullness > 0.8);
+  assert.equal(model.breathAt(payload, 4).fullness, 1);
+  assert.equal(model.breathAt(payload, 4).phaseIndex, 2);
+  const timings = model.timingFromPattern(sigh);
+  assert.equal(timings.topUp, 1);
+  const saved = model.saveProtocol(empty(), {name: 'My sigh', ...timings});
+  const reloaded = model.parseProtocolLibrary(JSON.stringify(saved.library));
+  assert.equal(model.recordPattern(reloaded.protocols[0]).phases.length, 3);
+  assert.equal(model.recordPattern(reloaded.protocols[0]).phases[0].to, 0.8);
+  assert.ok(model.protocolDescription(model.recordPattern(reloaded.protocols[0])).includes('Top-up inhale: 1 sec'));
+  const disabled = model.saveProtocol(reloaded, {id: saved.record.id, name: 'No top-up', ...timings, topUp: 0});
+  assert.equal(model.recordPattern(disabled.record).phases.length, 2);
+});
 console.log(`${checks} model checks passed`);

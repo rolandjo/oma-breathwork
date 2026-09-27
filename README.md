@@ -13,6 +13,24 @@ The session visual can be changed in **Protocol settings**. Choose the classic
 expanding **Orb**, layered **Pulse rings**, or a vertical **Breath bar**. The
 choice is saved and applies to every breathing protocol.
 
+## Screenshots
+
+**Bar icon and practice summary**
+
+![Bar icon and practice summary](docs/screenshots/bar-tooltip.png)
+
+**Protocol selection and weekly practice history**
+
+![Protocol selection and weekly practice history](docs/screenshots/protocol-selector.png)
+
+**Personal protocol editor, visuals, and audio settings**
+
+![Personal protocol editor, visuals, and audio settings](docs/screenshots/protocol-settings.png)
+
+**Power Breathe rounds and timed hold settings**
+
+![Power Breathe rounds and timed hold settings](docs/screenshots/power-breathe-settings.png)
+
 ## Installation
 
 Requires an Omarchy desktop with the Quickshell-based shell and `omarchy plugin`

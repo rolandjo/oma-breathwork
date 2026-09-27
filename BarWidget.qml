@@ -23,7 +23,7 @@ Panel {
 
   property var stats: Model.parseStats("")
   property var protocolLibrary: Model.parseProtocolLibrary("")
-  readonly property string todayKey: Qt.formatDateTime(new Date(), "yyyy-MM-dd")
+  property string todayKey: Qt.formatDateTime(new Date(), "yyyy-MM-dd")
   readonly property string summary: Model.statsSummary(stats, todayKey)
   readonly property int streak: Model.streakDays(stats, todayKey)
 
@@ -50,16 +50,17 @@ Panel {
   property bool settingsOpened: false
   property string editingProtocolId: ""
   property string editorName: ""
-  property int editorInhale: 4
-  property int editorHoldIn: 0
-  property int editorExhale: 4
-  property int editorHoldOut: 0
+  property real editorInhale: 4
+  property real editorHoldIn: 0
+  property real editorExhale: 4
+  property real editorHoldOut: 0
   property bool editingPowerProtocol: false
   property int editorPowerRounds: 3
   property int editorPowerBreaths: 30
   property int editorPowerBreathSeconds: 3
+  property int editorPowerRetentionHold: 10
   property int editorPowerRecoveryHold: 10
-  property int editorPowerRecoveryIncrease: 5
+  property int editorPowerRetentionIncrease: 5
   property string settingsMessage: ""
   property bool deleteArmed: false
 
@@ -144,7 +145,8 @@ Panel {
       powerBreaths: Number(setting("powerBreaths", 30)),
       powerBreathSeconds: Number(setting("powerBreathSeconds", 3)),
       powerRecoveryHold: Number(setting("powerRecoveryHold", 10)),
-      powerRecoveryIncrease: Number(setting("powerRecoveryIncrease", 5))
+      powerRetentionHold: Number(setting("powerRetentionHold", setting("powerRecoveryHold", 10))),
+      powerRetentionIncrease: Number(setting("powerRetentionIncrease", setting("powerRecoveryIncrease", 5)))
     })
     if (root.bar && root.bar.shell && typeof root.bar.shell.summon === "function")
       root.bar.shell.summon(root.moduleName, payload)
@@ -154,8 +156,43 @@ Panel {
     root.settingsOpened = false
   }
 
-  function persistProtocolLibrary() {
-    Quickshell.execDetached(Model.persistJsonCommand(root.protocolsPath, root.protocolLibrary))
+  property bool protocolLoadFailed: false
+  property bool protocolSavePending: false
+
+  function persistProtocolLibrary(library, context) {
+    if (root.protocolLoadFailed || root.protocolSavePending) {
+      root.settingsMessage = root.protocolLoadFailed
+        ? "Cannot save: the protocol file could not be read. Restore it before saving."
+        : "A save is already in progress"
+      return false
+    }
+    root.protocolSavePending = true
+    root.settingsMessage = "Saving…"
+    protocolWriter.submit(root.protocolsPath, "protocols", { library: library, expected: root.protocolLibrary }, context)
+    return true
+  }
+
+  JsonWriter {
+    id: protocolWriter
+    onFinished: function(ok, message, context) {
+      root.protocolSavePending = false
+      if (!ok) {
+        root.settingsMessage = "Save failed: " + message
+        return
+      }
+      root.protocolLibrary = context.library
+      if (context.deletedKey) {
+        if (root.chosenPattern === context.deletedKey) root.choose("box", root.chosenMinutes)
+        root.newProtocol()
+        root.settingsMessage = "Protocol deleted"
+      } else {
+        root.editingProtocolId = context.record.id
+        root.editorName = context.record.name
+        root.choose(Model.savedProtocolKey(context.record.id), root.chosenMinutes)
+        root.settingsMessage = "Saved and selected: " + context.record.name
+      }
+      root.deleteArmed = false
+    }
   }
 
   function loadEditorFromPattern(patternKey) {
@@ -167,7 +204,8 @@ Panel {
       root.editorPowerBreaths = Number(root.setting("powerBreaths", 30))
       root.editorPowerBreathSeconds = Number(root.setting("powerBreathSeconds", 3))
       root.editorPowerRecoveryHold = Number(root.setting("powerRecoveryHold", 10))
-      root.editorPowerRecoveryIncrease = Number(root.setting("powerRecoveryIncrease", 5))
+      root.editorPowerRetentionHold = Number(root.setting("powerRetentionHold", root.setting("powerRecoveryHold", 10)))
+      root.editorPowerRetentionIncrease = Number(root.setting("powerRetentionIncrease", root.setting("powerRecoveryIncrease", 5)))
       root.settingsMessage = ""
       root.deleteArmed = false
       return
@@ -229,7 +267,8 @@ Panel {
       powerBreaths: root.editorPowerBreaths,
       powerBreathSeconds: root.editorPowerBreathSeconds,
       powerRecoveryHold: root.editorPowerRecoveryHold,
-      powerRecoveryIncrease: root.editorPowerRecoveryIncrease
+      powerRetentionHold: root.editorPowerRetentionHold,
+      powerRetentionIncrease: root.editorPowerRetentionIncrease
     })
     root.choose("power", root.chosenMinutes)
     root.settingsMessage = "Saved Power Breathe settings"
@@ -249,17 +288,7 @@ Panel {
       protocolNameField.forceActiveFocus()
       return
     }
-    root.protocolLibrary = result.library
-    root.editingProtocolId = result.record.id
-    root.editorName = result.record.name
-    root.editorInhale = result.record.inhale
-    root.editorHoldIn = result.record.holdIn
-    root.editorExhale = result.record.exhale
-    root.editorHoldOut = result.record.holdOut
-    root.persistProtocolLibrary()
-    root.choose(Model.savedProtocolKey(result.record.id), root.chosenMinutes)
-    root.settingsMessage = "Saved and selected: " + result.record.name
-    root.deleteArmed = false
+    root.persistProtocolLibrary(result.library, { library: result.library, record: result.record })
   }
 
   function deleteEditor() {
@@ -270,14 +299,19 @@ Panel {
       return
     }
     var deletedKey = Model.savedProtocolKey(root.editingProtocolId)
-    root.protocolLibrary = Model.removeProtocol(root.protocolLibrary, root.editingProtocolId)
-    root.persistProtocolLibrary()
-    if (root.chosenPattern === deletedKey) root.choose("box", root.chosenMinutes)
-    root.newProtocol()
-    root.settingsMessage = "Protocol deleted"
+    var next = Model.removeProtocol(root.protocolLibrary, root.editingProtocolId)
+    root.persistProtocolLibrary(next, { library: next, deletedKey: deletedKey })
+  }
+
+  Timer {
+    interval: 30000
+    running: true
+    repeat: true
+    onTriggered: root.todayKey = Qt.formatDateTime(new Date(), "yyyy-MM-dd")
   }
 
   onOpenedChanged: if (opened) {
+    root.todayKey = Qt.formatDateTime(new Date(), "yyyy-MM-dd")
     statsFile.reload()
     protocolsFile.reload()
   }
@@ -297,9 +331,19 @@ Panel {
     path: root.protocolsPath
     watchChanges: true
     printErrors: false
-    onLoaded: root.protocolLibrary = Model.parseProtocolLibrary(text())
+    onLoaded: {
+      var raw = text()
+      root.protocolLoadFailed = !Model.protocolLibraryIsValid(raw)
+      if (!root.protocolLoadFailed && !root.protocolSavePending)
+        root.protocolLibrary = Model.parseProtocolLibrary(raw)
+      if (root.protocolLoadFailed) root.settingsMessage = "Cannot read the protocol file; existing data has been preserved."
+    }
     onFileChanged: reload()
-    onLoadFailed: root.protocolLibrary = Model.parseProtocolLibrary("")
+    onLoadFailed: {
+      // The writer checks for missing files versus unreadable/corrupt existing
+      // files under a lock before any mutation. Preserve the last good view.
+      root.protocolLoadFailed = false
+    }
   }
 
   IpcHandler {
@@ -328,7 +372,8 @@ Panel {
         powerBreaths: Number(root.setting("powerBreaths", 30)),
         powerBreathSeconds: Number(root.setting("powerBreathSeconds", 3)),
         powerRecoveryHold: Number(root.setting("powerRecoveryHold", 10)),
-        powerRecoveryIncrease: Number(root.setting("powerRecoveryIncrease", 5)),
+        powerRetentionHold: Number(root.setting("powerRetentionHold", root.setting("powerRecoveryHold", 10))),
+        powerRetentionIncrease: Number(root.setting("powerRetentionIncrease", root.setting("powerRecoveryIncrease", 5))),
         phaseCuesEnabled: root.setting("phaseCues", true) !== false,
         savedProtocols: root.protocolLibrary.protocols.length
       })
@@ -523,7 +568,7 @@ Panel {
               Button {
                 required property var modelData
                 text: modelData.name
-                tooltipText: modelData.hint
+                tooltipText: Model.protocolDescription(modelData, root.settings)
                 bordered: true
                 selected: root.chosenPattern === modelData.key
                 foreground: root.foreground
@@ -537,9 +582,10 @@ Panel {
             width: parent.width
             visible: root.chosenPattern === "power"
             text: Number(root.setting("powerRounds", 3)) + " rounds · "
-              + Number(root.setting("powerBreaths", 30)) + " deep breaths · retention at your pace · "
-              + "recovery holds " + root.powerHoldPlan(root.setting("powerRecoveryHold", 10),
-                root.setting("powerRecoveryIncrease", 5), root.setting("powerRounds", 3)) + " sec"
+              + Number(root.setting("powerBreaths", 30)) + " deep breaths · timed exhale holds "
+              + root.powerHoldPlan(root.setting("powerRetentionHold", root.setting("powerRecoveryHold", 10)),
+                root.setting("powerRetentionIncrease", root.setting("powerRecoveryIncrease", 5)), root.setting("powerRounds", 3))
+              + " sec · recovery hold " + root.setting("powerRecoveryHold", 10) + " sec"
             color: root.dim
             font.family: root.fontFamily
             font.pixelSize: Style.font.bodySmall
@@ -623,8 +669,9 @@ Panel {
         || powerRoundsField.field.activeFocus || powerRoundsField.field.contentItem.activeFocus
         || powerBreathsField.field.activeFocus || powerBreathsField.field.contentItem.activeFocus
         || powerPaceField.field.activeFocus || powerPaceField.field.contentItem.activeFocus
+        || powerRetentionField.field.activeFocus || powerRetentionField.field.contentItem.activeFocus
         || powerRecoveryField.field.activeFocus || powerRecoveryField.field.contentItem.activeFocus
-        || powerRecoveryIncreaseField.field.activeFocus || powerRecoveryIncreaseField.field.contentItem.activeFocus
+        || powerRetentionIncreaseField.field.activeFocus || powerRetentionIncreaseField.field.contentItem.activeFocus
 
       onCloseRequested: root.closeSettings(false)
 
@@ -639,6 +686,7 @@ Panel {
 
         Column {
           id: settingsColumn
+          enabled: !root.protocolSavePending
           width: settingsScroll.width
           spacing: Style.space(14)
 
@@ -738,7 +786,7 @@ Panel {
             rowSpacing: Style.space(12)
             visible: !root.editingPowerProtocol
 
-            NumberField {
+            DecimalField {
               id: inhaleField
               label: "Inhale (seconds)"
               from: 1
@@ -751,7 +799,7 @@ Panel {
               onModified: function(v) { root.editorInhale = v }
             }
 
-            NumberField {
+            DecimalField {
               id: holdInField
               label: "Hold after inhale"
               from: 0
@@ -764,7 +812,7 @@ Panel {
               onModified: function(v) { root.editorHoldIn = v }
             }
 
-            NumberField {
+            DecimalField {
               id: exhaleField
               label: "Exhale (seconds)"
               from: 1
@@ -777,7 +825,7 @@ Panel {
               onModified: function(v) { root.editorExhale = v }
             }
 
-            NumberField {
+            DecimalField {
               id: holdOutField
               label: "Hold after exhale"
               from: 0
@@ -798,7 +846,7 @@ Panel {
 
             Text {
               width: parent.width
-              text: "1. Deep breathing · 2. Hold after the final exhale · 3. Full recovery inhale · 4. Hold the recovery breath"
+              text: "1. Deep breathing · 2. Hold after the final exhale · 3. Full recovery inhale · 4. Hold the recovery breath · 5. Release"
               color: root.foreground
               font.family: root.fontFamily
               font.pixelSize: Style.font.body
@@ -807,7 +855,7 @@ Panel {
 
             Text {
               width: parent.width
-              text: "The exhale retention has no countdown. Continue with Space, Enter, or the on-screen button when you naturally need to breathe."
+              text: "The exhale hold counts down and automatically starts the recovery breath. Space, Enter, or End hold early lets you continue sooner."
               color: root.dim
               font.family: root.fontFamily
               font.pixelSize: Style.font.bodySmall
@@ -860,7 +908,7 @@ Panel {
 
               NumberField {
                 id: powerRecoveryField
-                label: "First recovery hold"
+                label: "Recovery hold after inhale"
                 from: 5
                 to: 30
                 value: root.editorPowerRecoveryHold
@@ -873,25 +921,39 @@ Panel {
 
 
               NumberField {
-                id: powerRecoveryIncreaseField
-                label: "Hold increase per round"
-                from: 0
-                to: 15
-                value: root.editorPowerRecoveryIncrease
+                id: powerRetentionField
+                label: "First hold after exhale (seconds)"
+                from: 1
+                to: 300
+                value: root.editorPowerRetentionHold
                 fieldWidth: Style.space(110)
                 foreground: root.foreground
                 accent: Color.accent
                 fontFamily: root.fontFamily
-                onModified: function(v) { root.editorPowerRecoveryIncrease = v }
+                onModified: function(v) { root.editorPowerRetentionHold = v }
+              }
+
+              NumberField {
+                id: powerRetentionIncreaseField
+                label: "Exhale hold increase per round"
+                from: 0
+                to: 60
+                value: root.editorPowerRetentionIncrease
+                fieldWidth: Style.space(110)
+                foreground: root.foreground
+                accent: Color.accent
+                fontFamily: root.fontFamily
+                onModified: function(v) { root.editorPowerRetentionIncrease = v }
               }
             }
 
             Text {
               width: parent.width
               text: root.editorPowerRounds + " rounds · " + root.editorPowerBreaths
-                + " breaths · " + root.editorPowerBreathSeconds + " sec each · manual retention · "
-                + "recovery holds " + root.powerHoldPlan(root.editorPowerRecoveryHold,
-                  root.editorPowerRecoveryIncrease, root.editorPowerRounds) + " sec"
+                + " breaths · " + root.editorPowerBreathSeconds + " sec each · timed exhale holds "
+                + root.powerHoldPlan(root.editorPowerRetentionHold,
+                  root.editorPowerRetentionIncrease, root.editorPowerRounds) + " sec · recovery hold "
+                + root.editorPowerRecoveryHold + " sec"
               color: Color.accent
               font.family: root.fontFamily
               font.pixelSize: Style.font.bodySmall
@@ -1022,7 +1084,7 @@ Panel {
           Text {
             width: parent.width
             text: root.editingPowerProtocol
-              ? "Power Breathe is a specialized round-based protocol. Its manual retention and recovery steps are preserved when you change these values."
+              ? "Power Breathe is a specialized round-based protocol. Its timed exhale holds and separate recovery steps are preserved when you change these values."
               : "Built-in protocols stay unchanged. Saving creates a personal named protocol; reopening it here lets you change its timing."
             color: root.dim
             font.family: root.fontFamily

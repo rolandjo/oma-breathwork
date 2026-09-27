@@ -68,7 +68,7 @@ var PATTERNS = {
   power: {
     key: "power",
     name: "Power Breathe",
-    hint: "3 rounds · 30 deep breaths · guided retention",
+    hint: "Round-based breathing with timed holds",
     phases: [
       { label: "Deep breath in", secs: 1.5, to: 1 },
       { label: "Let go", secs: 1.5, to: 0 }
@@ -238,7 +238,11 @@ function uniqueProtocolId(name, protocols) {
   var suffix = 2
   var used = {}
   for (var i = 0; i < protocols.length; i++) used[protocols[i].id] = true
-  while (used[id]) { id = base + "-" + suffix; suffix++ }
+  while (used[id]) {
+    var ending = "-" + suffix
+    id = base.substring(0, 48 - ending.length) + ending
+    suffix++
+  }
   return id
 }
 
@@ -291,7 +295,7 @@ function breathAt(pat, t) {
     var ph = pat.phases[i]
     if (into < ph.secs) {
       var x = ph.secs > 0 ? into / ph.secs : 1
-      var eased = 0.5 - 0.5 * Math.cos(Math.PI * x)
+      var eased = breathProgress(x)
       return {
         phaseIndex: i,
         label: ph.label,
@@ -394,22 +398,41 @@ function bellCommand(soundFile) {
   ]
 }
 
-// Argv for persisting the stats file; JSON travels as a positional arg so it
-// is data to the shell, never syntax.
-function persistStatsCommand(path, stats) {
-  return [
-    "sh", "-c",
-    'mkdir -p "$(dirname "$1")" && printf %s "$2" > "$1"',
-    "sh", path, JSON.stringify(stats)
-  ]
+// A small linear component makes motion visible immediately, while retaining
+// the soft shape of the original pacing curve.
+function breathProgress(x) {
+  x = Math.max(0, Math.min(1, x))
+  return 0.25 * x + 0.75 * (0.5 - 0.5 * Math.cos(Math.PI * x))
 }
 
-function persistJsonCommand(path, value) {
-  return [
-    "sh", "-c",
-    'mkdir -p "$(dirname "$1")" && tmp="$1.tmp" && printf %s "$2" > "$tmp" && mv "$tmp" "$1"',
-    "sh", path, JSON.stringify(value)
-  ]
+// Pure transition decision shared by the overlay and regression tests.
+function powerTransition(stage, elapsed, breaths, pace, hold, round, rounds, retention) {
+  if (stage === "breathing" && elapsed >= breaths * pace) return "retention"
+  if (stage === "retention" && elapsed >= retention) return "recoveryIn"
+  if (stage === "recoveryIn" && elapsed >= pace / 2) return "recoveryHold"
+  if (stage === "recoveryHold" && elapsed >= hold) return "release"
+  if (stage === "release" && elapsed >= pace / 2)
+    return round >= rounds ? "complete" : "nextRound"
+  return ""
+}
+
+function protocolLibraryIsValid(raw) {
+  try {
+    var value = JSON.parse(raw)
+    if (!value || value.version !== 1 || !Array.isArray(value.protocols)) return false
+    var normalized = normalizeProtocolLibrary(value)
+    if (normalized.protocols.length !== value.protocols.length) return false
+    for (var i = 0; i < value.protocols.length; i++) {
+      var record = value.protocols[i]
+      if (typeof record.id !== "string" || !record.id || typeof record.name !== "string" || !record.name.trim()) return false
+      var fields = ["inhale", "holdIn", "exhale", "holdOut"]
+      for (var j = 0; j < fields.length; j++) {
+        var n = record[fields[j]]
+        if (typeof n !== "number" || !isFinite(n) || n < (j % 2 === 0 ? 1 : 0) || n > 30) return false
+      }
+    }
+    return true
+  } catch (e) { return false }
 }
 
 function formatRemaining(totalSecs) {
@@ -417,4 +440,35 @@ function formatRemaining(totalSecs) {
   var m = Math.floor(s / 60)
   var sec = s % 60
   return m + ":" + (sec < 10 ? "0" : "") + sec
+}
+
+// Describe the actual phase timings, rather than a fixed marketing hint.
+function protocolDescription(pat, options) {
+  options = options || {}
+  if (pat.key === "power") {
+    function bounded(value, fallback, low, high) {
+      var n = Number(value)
+      return Math.max(low, Math.min(high, Math.round(isFinite(n) ? n : fallback)))
+    }
+    var rounds = bounded(options.powerRounds, 3, 1, 20)
+    var breaths = bounded(options.powerBreaths, 30, 30, 40)
+    var pace = Number(options.powerBreathSeconds)
+    pace = Math.max(2, Math.min(5, isFinite(pace) ? pace : 3))
+    var first = bounded(options.powerRetentionHold !== undefined ? options.powerRetentionHold : options.powerRecoveryHold, 10, 1, 300)
+    var increase = bounded(options.powerRetentionIncrease !== undefined ? options.powerRetentionIncrease : options.powerRecoveryIncrease, 5, 0, 60)
+    var recovery = bounded(options.powerRecoveryHold, 10, 5, 30)
+    var holds = []
+    for (var i = 0; i < rounds; i++) holds.push(first + i * increase)
+    return rounds + (rounds === 1 ? " round" : " rounds") + " · " + breaths + " breaths per round"
+      + "\n" + pace + " sec per breath"
+      + "\nExhale holds: " + holds.join(" / ") + " sec"
+      + "\nRecovery hold: " + recovery + " sec each round"
+  }
+  var phases = []
+  for (var j = 0; j < pat.phases.length; j++) {
+    var phase = pat.phases[j]
+    var label = phase.label === "Hold" ? (phase.to === 1 ? "Hold after inhale" : "Hold after exhale") : phase.label
+    phases.push(label + ": " + phase.secs + " sec")
+  }
+  return phases.join(" · ")
 }

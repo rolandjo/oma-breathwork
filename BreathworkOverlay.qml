@@ -42,7 +42,7 @@ Item {
 
   // Power Breathe follows a round-based sequence rather than a fixed-length
   // repeating rhythm: 30 deep breaths, retention after exhale, then a full
-  // recovery inhale held for 15 seconds.
+  // recovery inhale, a configurable hold, and a release before advancing.
   property bool powerMode: false
   property int powerRound: 1
   property int powerRounds: 3
@@ -52,9 +52,10 @@ Item {
   readonly property double powerStageElapsed: Math.max(0, (nowMs - powerStageStartedAt) / 1000)
   property double powerBreathCycleSecs: 3
   property int powerRecoveryHoldSecs: 10
-  property int powerRecoveryHoldIncreaseSecs: 5
-  readonly property int powerCurrentRecoveryHoldSecs: powerRecoveryHoldSecs
-    + (powerRound - 1) * powerRecoveryHoldIncreaseSecs
+  property int powerRetentionHoldSecs: 10
+  property int powerRetentionIncreaseSecs: 5
+  readonly property int powerCurrentRetentionSecs: powerRetentionHoldSecs
+    + (powerRound - 1) * powerRetentionIncreaseSecs
 
   // Session comforts, set per-summon via payload. DND is borrowed, not owned:
   // it engages only if it was off, and the previous state is restored.
@@ -119,20 +120,14 @@ Item {
 
   function updatePowerSession() {
     if (!root.powerMode || root.gettingReady) return
-    if (root.powerStage === "breathing"
-        && root.powerStageElapsed >= root.powerBreathsPerRound * root.powerBreathCycleSecs) {
-      root.enterPowerStage("retention")
-    } else if (root.powerStage === "recoveryIn"
-               && root.powerStageElapsed >= root.powerBreathCycleSecs / 2) {
-      root.enterPowerStage("recoveryHold")
-    } else if (root.powerStage === "recoveryHold"
-               && root.powerStageElapsed >= root.powerCurrentRecoveryHoldSecs) {
-      if (root.powerRound >= root.powerRounds) root.endSession(true)
-      else {
-        root.powerRound += 1
-        root.enterPowerStage("breathing")
-      }
-    }
+    var next = Model.powerTransition(root.powerStage, root.powerStageElapsed,
+      root.powerBreathsPerRound, root.powerBreathCycleSecs,
+      root.powerRecoveryHoldSecs, root.powerRound, root.powerRounds, root.powerCurrentRetentionSecs)
+    if (next === "complete") root.endSession(true)
+    else if (next === "nextRound") {
+      root.powerRound += 1
+      root.enterPowerStage("breathing")
+    } else if (next) root.enterPowerStage(next)
   }
 
   function powerBreathState() {
@@ -149,11 +144,11 @@ Item {
       }
     }
     if (root.powerStage === "retention")
-      return { phaseIndex: 100, label: "Hold after exhale", secsLeft: 0, fullness: 0 }
+      return { phaseIndex: 100, label: "Hold after exhale", secsLeft: Math.max(0, Math.ceil(root.powerCurrentRetentionSecs - root.powerStageElapsed)), fullness: 0 }
     if (root.powerStage === "recoveryIn") {
       var recoveryInSecs = root.powerBreathCycleSecs / 2
       var x = Math.min(1, root.powerStageElapsed / recoveryInSecs)
-      var eased = 0.5 - 0.5 * Math.cos(Math.PI * x)
+      var eased = Model.breathProgress(x)
       return {
         phaseIndex: 101,
         label: "Recovery breath in",
@@ -161,10 +156,19 @@ Item {
         fullness: eased
       }
     }
+    if (root.powerStage === "release") {
+      var releaseSecs = root.powerBreathCycleSecs / 2
+      return {
+        phaseIndex: 103,
+        label: "Release recovery breath",
+        secsLeft: Math.max(1, Math.ceil(releaseSecs - root.powerStageElapsed)),
+        fullness: 1 - Model.breathProgress(root.powerStageElapsed / releaseSecs)
+      }
+    }
     return {
       phaseIndex: 102,
       label: "Hold recovery breath",
-      secsLeft: Math.max(0, Math.ceil(root.powerCurrentRecoveryHoldSecs - root.powerStageElapsed)),
+      secsLeft: Math.max(0, Math.ceil(root.powerRecoveryHoldSecs - root.powerStageElapsed)),
       fullness: 1
     }
   }
@@ -177,8 +181,7 @@ Item {
   readonly property var breath: gettingReady
     ? ({ phaseIndex: -1, label: "Get ready", secsLeft: Math.ceil(readyRemainingSecs), fullness: 0 })
     : (powerMode ? powerBreathState() : Model.breathAt(pattern, elapsedSecs))
-  readonly property string centerText: powerMode && !gettingReady && powerStage === "retention"
-    ? Model.formatRemaining(Math.floor(powerStageElapsed)) : String(breath.secsLeft)
+  readonly property string centerText: String(breath.secsLeft)
 
   property color foreground: Color.menu.text
   readonly property color dim: Qt.darker(foreground, 1.55)
@@ -202,9 +205,12 @@ Item {
     var recoveryHold = Number(payload.powerRecoveryHold)
     if (!isFinite(recoveryHold)) recoveryHold = 10
     root.powerRecoveryHoldSecs = Math.max(5, Math.min(30, Math.round(recoveryHold)))
-    var recoveryIncrease = Number(payload.powerRecoveryIncrease)
-    if (!isFinite(recoveryIncrease)) recoveryIncrease = 5
-    root.powerRecoveryHoldIncreaseSecs = Math.max(0, Math.min(15, Math.round(recoveryIncrease)))
+    var retention = Number(payload.powerRetentionHold !== undefined ? payload.powerRetentionHold : payload.powerRecoveryHold)
+    if (!isFinite(retention)) retention = 10
+    root.powerRetentionHoldSecs = Math.max(1, Math.min(300, Math.round(retention)))
+    var retentionIncrease = Number(payload.powerRetentionIncrease !== undefined ? payload.powerRetentionIncrease : payload.powerRecoveryIncrease)
+    if (!isFinite(retentionIncrease)) retentionIncrease = 5
+    root.powerRetentionIncreaseSecs = Math.max(0, Math.min(60, Math.round(retentionIncrease)))
     if (root.powerMode) {
       root.pattern = {
         key: "power",
@@ -276,7 +282,7 @@ Item {
     if (minutes >= 1) {
       var today = Qt.formatDateTime(new Date(), "yyyy-MM-dd")
       root.stats = Model.addMinutes(root.stats, today, minutes)
-      Quickshell.execDetached(Model.persistStatsCommand(root.statsPath, root.stats))
+      statsWriter.submit(root.statsPath, "add-minutes", { day: today, minutes: minutes })
     }
     if (completed) {
       root.ring("complete.oga")
@@ -291,6 +297,18 @@ Item {
     root.dismiss()
   }
 
+  JsonWriter {
+    id: statsWriter
+    onFinished: function(ok, message, context) {
+      if (ok) statsFile.reload()
+      else {
+        console.error("Breathwork: " + message)
+        Quickshell.execDetached([root.omarchyPath + "/bin/omarchy-notification-send",
+          "Breathwork history could not be saved", message])
+      }
+    }
+  }
+
   FileView {
     id: statsFile
     path: root.statsPath
@@ -301,10 +319,8 @@ Item {
     onLoadFailed: root.stats = Model.parseStats("")
   }
 
-  Timer {
-    interval: 100
+  FrameAnimation {
     running: root.opened && root.startedAt > 0
-    repeat: true
     onTriggered: {
       root.nowMs = Date.now()
       if (root.powerMode) root.updatePowerSession()
@@ -478,7 +494,7 @@ Item {
       Button {
         anchors.horizontalCenter: parent.horizontalCenter
         visible: root.powerMode && !root.gettingReady && root.powerStage === "retention"
-        text: "Take recovery breath"
+        text: "End hold early"
         bordered: true
         foreground: Color.accent
         fontFamily: root.fontFamily
@@ -498,9 +514,11 @@ Item {
             return "Round " + root.powerRound + "/" + root.powerRounds + " · breathe fully in, let go without force"
           if (root.powerStage === "retention")
             return "Round " + root.powerRound + "/" + root.powerRounds
-              + " · hold only until the urge to breathe · Space/Enter to continue"
+              + " · " + root.powerCurrentRetentionSecs + " sec exhale hold · Space/Enter to end early"
+          if (root.powerStage === "release")
+            return "Round " + root.powerRound + "/" + root.powerRounds + " · release before continuing"
           return "Round " + root.powerRound + "/" + root.powerRounds + " · recovery breath · "
-            + root.powerCurrentRecoveryHoldSecs + " sec hold"
+            + root.powerRecoveryHoldSecs + " sec hold"
         }
         color: root.dim
         font.family: root.fontFamily

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "oma.breathwork",
   "name": "Breathwork",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "license": "MIT",
   "description": "A customizable guided-breathing pacer for Omarchy with built-in and named personal protocols, session tracking, and a daily streak.",
   "kinds": [
@@ -45,14 +45,15 @@
       "powerBreaths": 30,
       "powerBreathSeconds": 3,
       "powerRecoveryHold": 10,
-      "powerRecoveryIncrease": 5,
       "bell": true,
       "phaseCues": true,
       "dnd": true,
       "customIn": 4,
       "customHoldIn": 2,
       "customOut": 6,
-      "customHoldOut": 0
+      "customHoldOut": 0,
+      "powerRetentionHold": 10,
+      "powerRetentionIncrease": 5
     },
     "schema": [
       {
@@ -133,18 +134,18 @@
       {
         "key": "powerRecoveryHold",
         "type": "integer",
-        "label": "Power Breathe: first recovery hold seconds",
+        "label": "Power Breathe: recovery hold after inhale (seconds)",
         "min": 5,
         "max": 30,
         "step": 1,
         "defaultValue": 10
       },
       {
-        "key": "powerRecoveryIncrease",
+        "key": "powerRetentionIncrease",
         "type": "integer",
-        "label": "Power Breathe: recovery hold increase per round",
+        "label": "Power Breathe: exhale hold increase per round",
         "min": 0,
-        "max": 15,
+        "max": 60,
         "step": 1,
         "defaultValue": 5
       },
@@ -183,6 +184,15 @@
         "max": 30,
         "step": 1,
         "defaultValue": 0
+      },
+      {
+        "key": "powerRetentionHold",
+        "type": "integer",
+        "label": "Power Breathe: first hold after exhale (seconds)",
+        "min": 1,
+        "max": 300,
+        "step": 1,
+        "defaultValue": 10
       }
     ]
   }

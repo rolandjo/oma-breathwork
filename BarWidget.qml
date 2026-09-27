@@ -50,6 +50,7 @@ Panel {
   property bool settingsOpened: false
   property string editingProtocolId: ""
   property string editorName: ""
+  property real editorTopUp: 0
   property real editorInhale: 4
   property real editorHoldIn: 0
   property real editorExhale: 4
@@ -214,6 +215,7 @@ Panel {
     if (record) {
       root.editingProtocolId = record.id
       root.editorName = record.name
+      root.editorTopUp = Number(record.topUp || 0)
       root.editorInhale = record.inhale
       root.editorHoldIn = record.holdIn
       root.editorExhale = record.exhale
@@ -223,6 +225,7 @@ Panel {
       var timing = Model.timingFromPattern(pat)
       root.editingProtocolId = ""
       root.editorName = ""
+      root.editorTopUp = timing.topUp
       root.editorInhale = timing.inhale
       root.editorHoldIn = timing.holdIn
       root.editorExhale = timing.exhale
@@ -279,6 +282,7 @@ Panel {
       id: root.editingProtocolId,
       name: root.editorName,
       inhale: root.editorInhale,
+      topUp: root.editorTopUp,
       holdIn: root.editorHoldIn,
       exhale: root.editorExhale,
       holdOut: root.editorHoldOut
@@ -662,6 +666,7 @@ Panel {
       anchors.fill: parent
       blocked: protocolNameField.activeFocus
         || readyField.field.activeFocus || readyField.field.contentItem.activeFocus
+        || topUpField.field.activeFocus || topUpField.field.contentItem.activeFocus
         || inhaleField.field.activeFocus || inhaleField.field.contentItem.activeFocus
         || holdInField.field.activeFocus || holdInField.field.contentItem.activeFocus
         || exhaleField.field.activeFocus || exhaleField.field.contentItem.activeFocus
@@ -797,6 +802,19 @@ Panel {
               accent: Color.accent
               fontFamily: root.fontFamily
               onModified: function(v) { root.editorInhale = v }
+            }
+
+            DecimalField {
+              id: topUpField
+              label: "Second inhale (0 = off)"
+              from: 0
+              to: 30
+              value: root.editorTopUp
+              fieldWidth: Style.space(110)
+              foreground: root.foreground
+              accent: Color.accent
+              fontFamily: root.fontFamily
+              onModified: function(v) { root.editorTopUp = v }
             }
 
             DecimalField {
@@ -1029,7 +1047,7 @@ Panel {
           Text {
             width: parent.width
             visible: !root.editingPowerProtocol
-            text: root.editorInhale + " in · " + root.editorHoldIn + " hold · "
+            text: root.editorInhale + " in · " + (root.editorTopUp > 0 ? root.editorTopUp + " second inhale · " : "") + root.editorHoldIn + " hold · "
               + root.editorExhale + " out · " + root.editorHoldOut + " hold"
             color: root.dim
             font.family: root.fontFamily

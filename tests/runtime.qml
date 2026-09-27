@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import "plugin" as BW
+import "plugin/BreathworkModel.js" as Model
 
 ShellRoot {
   property int writesFinished: 0
@@ -30,6 +31,24 @@ ShellRoot {
     if (decimal.value !== 5.5 || decimal.field.value !== 55) throw new Error("Decimal field lost precision")
     if (decimal.field.valueFromText(decimal.field.textFromValue(55, decimal.field.locale), decimal.field.locale) !== 55)
       throw new Error("Decimal roundtrip failed")
+    widget.loadEditorFromPattern("sigh")
+    if (widget.editorInhale !== 3 || widget.editorTopUp !== 1 || widget.editorExhale !== 6) throw new Error("Sigh editor lost a phase")
+    overlay.pattern = Model.patternFromData(Model.pattern("sigh"))
+    overlay.getReadySecs = 0
+    overlay.startedAt = 1000
+    overlay.nowMs = 1000
+    overlay.phaseCuesWanted = true
+    overlay.lastPhaseIndex = -999
+    overlay.cueCurrentPhaseIfNeeded()
+    overlay.nowMs = 4000
+    overlay.cueCurrentPhaseIfNeeded()
+    overlay.cueCurrentPhaseIfNeeded()
+    if (overlay.breath.label !== "Top-up inhale" || overlay.breath.fullness !== 0.8) throw new Error("Sigh top-up visual failed")
+    overlay.nowMs = 5000
+    overlay.cueCurrentPhaseIfNeeded()
+    if (overlay.cues !== 3 || overlay.breath.label !== "Breathe out") throw new Error("Sigh cues failed")
+    overlay.startedAt = 0
+    overlay.cues = 0
     widget.loadEditorFromPattern("coherent")
     if (widget.editorInhale !== 5.5 || widget.editorExhale !== 5.5) throw new Error("Editor lost decimals")
     widget.todayKey = "2000-01-01"

@@ -33,6 +33,14 @@ class PersistenceTests(unittest.TestCase):
         self.assertIn('changed on disk', result.stderr)
         self.assertEqual(json.loads(self.path.read_text()), LIBRARY)
 
+    def test_second_inhale_roundtrip(self):
+        library = {'version': 1, 'protocols': [dict(id='sigh', name='My sigh', inhale=3, topUp=1, holdIn=0, exhale=6, holdOut=0)]}
+        self.assertEqual(self.write('protocols', dict(expected=EMPTY, library=library)).returncode, 0)
+        self.assertEqual(json.loads(self.path.read_text()), library)
+        invalid = {'version': 1, 'protocols': [dict(library['protocols'][0], topUp=-1)]}
+        self.assertNotEqual(self.write('protocols', dict(expected=library, library=invalid)).returncode, 0)
+        self.assertEqual(json.loads(self.path.read_text()), library)
+
     def test_concurrent_history_updates(self):
         with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
             results = list(pool.map(lambda _: self.write('add-minutes', dict(day='2026-09-27', minutes=1)), range(32)))

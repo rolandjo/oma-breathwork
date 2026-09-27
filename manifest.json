@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "oma.breathwork",
   "name": "Breathwork",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "license": "MIT",
   "description": "A customizable guided-breathing pacer for Omarchy with built-in and named personal protocols, session tracking, and a daily streak.",
   "kinds": [
@@ -32,7 +32,10 @@
       "power breathe",
       "Wim Hof breathing",
       "custom breathing",
-      "protocol editor"
+      "protocol editor",
+      "double inhale",
+      "physiological sigh",
+      "cyclic sighing"
     ],
     "allowMultiple": false,
     "defaultSection": "right",
@@ -77,7 +80,7 @@
       {
         "key": "pattern",
         "type": "string",
-        "label": "Default breathing pattern (box, 478, coherent, equal, extended, triangle, power, custom)",
+        "label": "Default breathing pattern (box, 478, coherent, equal, extended, triangle, power, custom, sigh)",
         "defaultValue": "box"
       },
       {

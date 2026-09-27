@@ -65,6 +65,16 @@ var PATTERNS = {
       { label: "Breathe out", secs: 4, to: 0 }
     ]
   },
+  sigh: {
+    key: "sigh",
+    name: "Physiological Sigh",
+    hint: "Physiological sigh — two inhales, one long exhale",
+    phases: [
+      { label: "Breathe in", secs: 3, to: 0.8 },
+      { label: "Top-up inhale", secs: 1, to: 1 },
+      { label: "Breathe out", secs: 6, to: 0 }
+    ]
+  },
   power: {
     key: "power",
     name: "Power Breathe",
@@ -76,7 +86,7 @@ var PATTERNS = {
   }
 }
 
-var PATTERN_ORDER = ["box", "478", "coherent", "equal", "extended", "triangle", "power", "custom"]
+var PATTERN_ORDER = ["box", "478", "coherent", "equal", "extended", "triangle", "power", "custom", "sigh"]
 
 function boundedSeconds(value, fallback, minimum) {
   var n = Number(value)
@@ -84,8 +94,10 @@ function boundedSeconds(value, fallback, minimum) {
   return Math.max(minimum, Math.min(30, n))
 }
 
-function phasesForTimings(inhale, holdIn, exhale, holdOut) {
-  var phases = [{ label: "Breathe in", secs: boundedSeconds(inhale, 4, 1), to: 1 }]
+function phasesForTimings(inhale, holdIn, exhale, holdOut, topUp) {
+  topUp = boundedSeconds(topUp, 0, 0)
+  var phases = [{ label: "Breathe in", secs: boundedSeconds(inhale, 4, 1), to: topUp > 0 ? 0.8 : 1 }]
+  if (topUp > 0) phases.push({ label: "Top-up inhale", secs: topUp, to: 1 })
   holdIn = boundedSeconds(holdIn, 0, 0)
   holdOut = boundedSeconds(holdOut, 0, 0)
   if (holdIn > 0) phases.push({ label: "Hold", secs: holdIn, to: 1 })
@@ -122,7 +134,7 @@ function cleanProtocolRecord(record) {
   if (!name) return null
   var id = cleanId(record.id || name)
   if (!id) id = "protocol"
-  return {
+  var clean = {
     id: id,
     name: name.substring(0, 60),
     inhale: boundedSeconds(record.inhale, 4, 1),
@@ -130,6 +142,8 @@ function cleanProtocolRecord(record) {
     exhale: boundedSeconds(record.exhale, 4, 1),
     holdOut: boundedSeconds(record.holdOut, 0, 0)
   }
+  if (record.topUp !== undefined) clean.topUp = boundedSeconds(record.topUp, 0, 0)
+  return clean
 }
 
 function normalizeProtocolLibrary(value) {
@@ -161,7 +175,7 @@ function recordPattern(record) {
     key: savedProtocolKey(clean.id),
     name: clean.name,
     hint: clean.inhale + "-" + clean.holdIn + "-" + clean.exhale + "-" + clean.holdOut + " — saved",
-    phases: phasesForTimings(clean.inhale, clean.holdIn, clean.exhale, clean.holdOut)
+    phases: phasesForTimings(clean.inhale, clean.holdIn, clean.exhale, clean.holdOut, clean.topUp)
   }
 }
 
@@ -184,7 +198,7 @@ function patternFromData(data) {
     phases.push({
       label: String(source.label || (Number(source.to) >= 0.5 ? "Breathe in" : "Breathe out")),
       secs: secs,
-      to: Number(source.to) >= 0.5 ? 1 : 0
+      to: isFinite(Number(source.to)) ? Math.max(0, Math.min(1, Number(source.to))) : 0
     })
   }
   if (phases.length < 2) return null
@@ -219,12 +233,13 @@ function protocolOptions(library, options) {
 }
 
 function timingFromPattern(pat) {
-  var timing = { inhale: 4, holdIn: 0, exhale: 4, holdOut: 0 }
+  var timing = { inhale: 4, topUp: 0, holdIn: 0, exhale: 4, holdOut: 0 }
   if (!pat || !Array.isArray(pat.phases)) return timing
   var exhaled = false
   for (var i = 0; i < pat.phases.length; i++) {
     var phase = pat.phases[i]
     if (phase.label === "Breathe in") timing.inhale = phase.secs
+    else if (phase.label === "Top-up inhale") timing.topUp = phase.secs
     else if (phase.label === "Breathe out") { timing.exhale = phase.secs; exhaled = true }
     else if (phase.label === "Hold" && exhaled) timing.holdOut = phase.secs
     else if (phase.label === "Hold") timing.holdIn = phase.secs
@@ -259,6 +274,7 @@ function saveProtocol(library, draft) {
     id: id,
     name: name,
     inhale: draft.inhale,
+    topUp: draft.topUp,
     holdIn: draft.holdIn,
     exhale: draft.exhale,
     holdOut: draft.holdOut
@@ -425,6 +441,7 @@ function protocolLibraryIsValid(raw) {
     for (var i = 0; i < value.protocols.length; i++) {
       var record = value.protocols[i]
       if (typeof record.id !== "string" || !record.id || typeof record.name !== "string" || !record.name.trim()) return false
+      if (record.topUp !== undefined && (typeof record.topUp !== "number" || !isFinite(record.topUp) || record.topUp < 0 || record.topUp > 30)) return false
       var fields = ["inhale", "holdIn", "exhale", "holdOut"]
       for (var j = 0; j < fields.length; j++) {
         var n = record[fields[j]]

@@ -1,5 +1,7 @@
 # Breathwork in Omarchy
 
+![Hero banner breathwork](docs/screenshots/Hero_banner_breathwork.png)
+
 A personal, customizable guided-breathing plugin for the Omarchy shell. It is
 based on [Zen for Omarchy](https://github.com/ya-luotao/omarchy-zen) and keeps
 the original MIT license.

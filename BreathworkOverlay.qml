@@ -12,8 +12,8 @@ import "BreathworkModel.js" as Model
 // to come back to.
 //
 // Summon with:
-//   omarchy-shell shell summon roland.breathwork '{}'
-//   omarchy-shell shell summon roland.breathwork '{"pattern": "478", "minutes": 5}'
+//   omarchy-shell shell summon oma.breathwork '{}'
+//   omarchy-shell shell summon oma.breathwork '{"pattern": "478", "minutes": 5}'
 // Patterns include box, 4-7-8, coherent, equal, extended exhale,
 // triangle, and custom timings.
 //
@@ -255,7 +255,7 @@ Item {
     root.opened = false
     root.restoreDnd()
     if (root.shell && typeof root.shell.hide === "function")
-      root.shell.hide((root.manifest && root.manifest.id) || "roland.breathwork")
+      root.shell.hide((root.manifest && root.manifest.id) || "oma.breathwork")
   }
 
   function toggle() {
@@ -318,7 +318,7 @@ Item {
     visible: root.opened
     anchors { top: true; bottom: true; left: true; right: true }
     color: "transparent"
-    WlrLayershell.namespace: "roland-breathwork"
+    WlrLayershell.namespace: "oma-breathwork"
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: root.opened ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     exclusionMode: ExclusionMode.Ignore

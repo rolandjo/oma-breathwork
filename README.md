@@ -65,10 +65,10 @@ unchanged and can be used as templates for personal versions.
 ## Enable
 
 ```bash
-omarchy plugin enable roland.breathwork
+omarchy plugin enable oma.breathwork
 ```
 
-The plugin files live in `~/.config/omarchy/plugins/roland.breathwork/`.
+The plugin files live in `~/.config/omarchy/plugins/oma.breathwork/`.
 Practice history is stored at
 `~/.local/state/omarchy/breathwork/stats.json`.
 
@@ -78,11 +78,11 @@ The default custom rhythm is 4 seconds in, 2 seconds held, 6 seconds out, and
 no hold after the exhale. Change it with:
 
 ```bash
-omarchy bar set roland.breathwork customIn 4
-omarchy bar set roland.breathwork customHoldIn 2
-omarchy bar set roland.breathwork customOut 6
-omarchy bar set roland.breathwork customHoldOut 0
-omarchy bar set roland.breathwork pattern custom
+omarchy bar set oma.breathwork customIn 4
+omarchy bar set oma.breathwork customHoldIn 2
+omarchy bar set oma.breathwork customOut 6
+omarchy bar set oma.breathwork customHoldOut 0
+omarchy bar set oma.breathwork pattern custom
 ```
 
 Each phase accepts 0–30 seconds, except inhale and exhale, which require at
@@ -91,17 +91,17 @@ least 1 second.
 ## Other settings
 
 ```bash
-omarchy bar set roland.breathwork minutes 10
-omarchy bar set roland.breathwork getReadySeconds 5
-omarchy bar set roland.breathwork visualStyle rings
-omarchy bar set roland.breathwork powerRounds 3
-omarchy bar set roland.breathwork powerBreaths 30
-omarchy bar set roland.breathwork powerBreathSeconds 3
-omarchy bar set roland.breathwork powerRecoveryHold 10
-omarchy bar set roland.breathwork powerRecoveryIncrease 5
-omarchy bar set roland.breathwork bell false
-omarchy bar set roland.breathwork phaseCues false
-omarchy bar set roland.breathwork dnd false
+omarchy bar set oma.breathwork minutes 10
+omarchy bar set oma.breathwork getReadySeconds 5
+omarchy bar set oma.breathwork visualStyle rings
+omarchy bar set oma.breathwork powerRounds 3
+omarchy bar set oma.breathwork powerBreaths 30
+omarchy bar set oma.breathwork powerBreathSeconds 3
+omarchy bar set oma.breathwork powerRecoveryHold 10
+omarchy bar set oma.breathwork powerRecoveryIncrease 5
+omarchy bar set oma.breathwork bell false
+omarchy bar set oma.breathwork phaseCues false
+omarchy bar set oma.breathwork dnd false
 ```
 
 Phase cues are enabled by default and can also be changed in **Protocol
@@ -116,11 +116,11 @@ starts, so it does not reduce the selected session length.
 ## Commands
 
 ```bash
-omarchy-shell roland.breathwork start extended 5
-omarchy-shell roland.breathwork start power 5
-omarchy-shell roland.breathwork status
-omarchy-shell roland.breathwork settings
-omarchy-shell shell summon roland.breathwork '{"pattern":"custom","minutes":5,"customIn":4,"customHoldIn":2,"customOut":6,"customHoldOut":0}'
+omarchy-shell oma.breathwork start extended 5
+omarchy-shell oma.breathwork start power 5
+omarchy-shell oma.breathwork status
+omarchy-shell oma.breathwork settings
+omarchy-shell shell summon oma.breathwork '{"pattern":"custom","minutes":5,"customIn":4,"customHoldIn":2,"customOut":6,"customHoldOut":0}'
 ```
 
 ## Keybinding
@@ -129,7 +129,7 @@ Add this to `~/.config/hypr/bindings.lua` if you want a direct shortcut:
 
 ```lua
 o.bind("SUPER + SHIFT + B", "Breathwork",
-  [[omarchy-shell shell summon roland.breathwork '{"pattern": "custom", "minutes": 10}']])
+  [[omarchy-shell shell summon oma.breathwork '{"pattern": "custom", "minutes": 10}']])
 ```
 
 ## License

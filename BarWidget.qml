@@ -9,8 +9,8 @@ import "BreathworkModel.js" as Model
 // starts sessions; the settings panel creates and edits named rhythms.
 Panel {
   id: root
-  moduleName: "roland.breathwork"
-  ipcTarget: "roland.breathwork"
+  moduleName: "oma.breathwork"
+  ipcTarget: "oma.breathwork"
   manageIpc: false
 
   property string omarchyPath: Quickshell.env("OMARCHY_PATH")

@@ -1,9 +1,8 @@
 {
   "schemaVersion": 1,
-  "id": "roland.breathwork",
+  "id": "oma.breathwork",
   "name": "Breathwork",
-  "version": "1.0.0",
-  "author": "Roland",
+  "version": "1.0.1",
   "license": "MIT",
   "description": "A customizable guided-breathing pacer for Omarchy with built-in and named personal protocols, session tracking, and a daily streak.",
   "kinds": [

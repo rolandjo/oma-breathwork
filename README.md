@@ -86,6 +86,30 @@ Preserve any local code changes before updating. If the shell continues showing
 old code after an update, run `omarchy restart shell` to reload it. Repository
 installation and updates include only changes that have been committed and pushed.
 
+## Uninstall
+
+To remove the plugin from the shell (deletes
+`~/.config/omarchy/plugins/oma.breathwork/`):
+
+```bash
+omarchy plugin remove oma.breathwork
+```
+
+Omarchy unloads it and rescans plugins, so a shell restart is usually not
+required. If the bar icon remains, run `omarchy restart shell`.
+
+Removing the plugin does **not** delete practice history or named protocols in
+`~/.local/state/omarchy/breathwork/`. Delete that directory yourself only if you
+want to discard that data.
+
+To stop using Breathwork without uninstalling, disable it instead:
+
+```bash
+omarchy plugin disable oma.breathwork
+```
+
+Re-enable later with `omarchy plugin enable oma.breathwork`.
+
 ## Protocols
 
 Times below are seconds. The possible benefits are intended uses, not promises

@@ -1,4 +1,4 @@
-# Breathwork for Omarchy
+# Breathwork in Omarchy
 
 A personal, customizable guided-breathing plugin for the Omarchy shell. It is
 based on [Zen for Omarchy](https://github.com/ya-luotao/omarchy-zen) and keeps

@@ -21,7 +21,7 @@ var PATTERNS = {
   "478": {
     key: "478",
     name: "4-7-8",
-    hint: "long exhale — wind down",
+    hint: "Long exhale — wind down",
     phases: [
       { label: "Breathe in", secs: 4, to: 1 },
       { label: "Hold", secs: 7, to: 1 },

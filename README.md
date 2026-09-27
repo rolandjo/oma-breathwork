@@ -33,6 +33,11 @@ choice is saved and applies to every breathing protocol.
 
 ## Installation
 
+> **Security:** Like every Omarchy shell plugin, this code runs **unsandboxed**
+> inside `omarchy-shell` with the same privileges as the rest of the desktop
+> shell. Review the repository before `--enable`, and only install sources you
+> trust.
+
 Requires an Omarchy desktop with the Quickshell-based shell and `omarchy plugin`
 commands, Git, and Python 3. Audio cues additionally need `pw-play` (PipeWire) or
 `paplay`, plus the freedesktop sound files; visuals work without audio.
@@ -209,6 +214,13 @@ omarchy bar set oma.breathwork customOut 6
 omarchy bar set oma.breathwork customHoldOut 0
 omarchy bar set oma.breathwork pattern custom
 ```
+
+`customIn`, `customHoldIn`, `customOut`, and `customHoldOut` are declared as
+`integer` in the plugin schema: Omarchy's settings types do not include a
+decimal/`number`/`real` field, so `omarchy bar set` on these keys is
+integer-only. Fractional phase timings (for example Coherent's 5.5 s) belong
+on **named personal protocols** saved from the Protocol settings editor, not
+on these bar defaults.
 
 The named-protocol editor accepts phase durations in 0.1-second steps up to
 30 seconds. Inhale and exhale require at least 1 second; holds may be zero.

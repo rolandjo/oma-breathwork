@@ -40,6 +40,8 @@ Panel {
     customHoldOut: Number(setting("customHoldOut", 0))
   })
   readonly property var protocolOptions: Model.protocolOptions(protocolLibrary, customConfig)
+  // Same formatter as protocol button tooltips — keeps the selected description in sync.
+  readonly property string selectedProtocolDescription: Model.protocolDescription(resolvedPattern(chosenPattern), settings)
   readonly property var minuteChoices: [3, 5, 10, 15, 20, 30]
   readonly property var visualChoices: [
     { key: "orb", name: "Orb" },
@@ -49,6 +51,7 @@ Panel {
 
   property bool settingsOpened: false
   property string editingProtocolId: ""
+  property string editorSourcePatternKey: ""
   property string editorName: ""
   property real editorTopUp: 0
   property real editorInhale: 4
@@ -197,7 +200,9 @@ Panel {
   }
 
   function loadEditorFromPattern(patternKey) {
-    root.editingPowerProtocol = String(patternKey) === "power"
+    var requestedKey = String(patternKey || root.chosenPattern)
+    root.editorSourcePatternKey = requestedKey
+    root.editingPowerProtocol = requestedKey === "power"
     if (root.editingPowerProtocol) {
       root.editingProtocolId = ""
       root.editorName = "Power Breathe"
@@ -211,8 +216,9 @@ Panel {
       root.deleteArmed = false
       return
     }
-    var record = Model.findProtocolRecord(root.protocolLibrary, patternKey)
+    var record = Model.findProtocolRecord(root.protocolLibrary, requestedKey)
     if (record) {
+      root.editorSourcePatternKey = ""
       root.editingProtocolId = record.id
       root.editorName = record.name
       root.editorTopUp = Number(record.topUp || 0)
@@ -221,7 +227,7 @@ Panel {
       root.editorExhale = record.exhale
       root.editorHoldOut = record.holdOut
     } else {
-      var pat = root.resolvedPattern(patternKey)
+      var pat = root.resolvedPattern(requestedKey)
       var timing = Model.timingFromPattern(pat)
       root.editingProtocolId = ""
       root.editorName = ""
@@ -259,6 +265,7 @@ Panel {
     root.loadEditorFromPattern(root.chosenPattern === "power" ? "box" : root.chosenPattern)
     root.editingPowerProtocol = false
     root.editingProtocolId = ""
+    root.editorSourcePatternKey = ""
     root.editorName = ""
     root.settingsMessage = ""
     Qt.callLater(function() { protocolNameField.forceActiveFocus() })
@@ -584,12 +591,7 @@ Panel {
 
           Text {
             width: parent.width
-            visible: root.chosenPattern === "power"
-            text: Number(root.setting("powerRounds", 3)) + " rounds · "
-              + Number(root.setting("powerBreaths", 30)) + " deep breaths · timed exhale holds "
-              + root.powerHoldPlan(root.setting("powerRetentionHold", root.setting("powerRecoveryHold", 10)),
-                root.setting("powerRetentionIncrease", root.setting("powerRecoveryIncrease", 5)), root.setting("powerRounds", 3))
-              + " sec · recovery hold " + root.setting("powerRecoveryHold", 10) + " sec"
+            text: root.selectedProtocolDescription
             color: root.dim
             font.family: root.fontFamily
             font.pixelSize: Style.font.bodySmall
@@ -640,7 +642,7 @@ Panel {
 
           Text {
             width: parent.width
-            text: "1-" + Math.min(9, root.protocolOptions.length) + " protocol · Enter begin · Esc close"
+            text: "1–" + Math.min(9, root.protocolOptions.length) + ": choose protocol · Enter: begin · Esc: close"
             color: root.dim
             font.family: root.fontFamily
             font.pixelSize: Style.font.bodySmall
@@ -699,7 +701,10 @@ Panel {
             width: parent.width
             title: "Protocol settings"
             meta: root.editingPowerProtocol ? "Power Breathe round sequence"
-              : (root.editingProtocolId ? "Editing " + root.editorName : "Create a named breathing rhythm")
+              : (root.editingProtocolId ? "Editing " + root.editorName
+                : (root.editorSourcePatternKey
+                  ? "Create from " + root.resolvedPattern(root.editorSourcePatternKey).name
+                  : "Create a named breathing rhythm"))
             foreground: root.foreground
             fontFamily: root.fontFamily
           }
@@ -721,12 +726,13 @@ Panel {
               spacing: Style.space(6)
 
               Button {
-                text: "Power Breathe"
+                visible: String(root.chosenPattern).indexOf("saved:") !== 0
+                text: root.resolvedPattern(root.chosenPattern).name
                 bordered: true
-                selected: root.editingPowerProtocol
+                selected: root.editorSourcePatternKey === root.chosenPattern
                 foreground: root.foreground
                 fontFamily: root.fontFamily
-                onClicked: root.loadEditorFromPattern("power")
+                onClicked: root.loadEditorFromPattern(root.chosenPattern)
               }
 
               Repeater {
@@ -747,6 +753,7 @@ Panel {
                 text: "+ New"
                 bordered: true
                 selected: !root.editingPowerProtocol && root.editingProtocolId === ""
+                  && root.editorSourcePatternKey === ""
                 foreground: Color.accent
                 fontFamily: root.fontFamily
                 onClicked: root.newProtocol()
@@ -819,7 +826,7 @@ Panel {
 
             DecimalField {
               id: holdInField
-              label: "Hold after inhale"
+              label: "Hold after inhale (seconds)"
               from: 0
               to: 30
               value: root.editorHoldIn
@@ -845,7 +852,7 @@ Panel {
 
             DecimalField {
               id: holdOutField
-              label: "Hold after exhale"
+              label: "Hold after exhale (seconds)"
               from: 0
               to: 30
               value: root.editorHoldOut
@@ -873,7 +880,7 @@ Panel {
 
             Text {
               width: parent.width
-              text: "The exhale hold counts down and automatically starts the recovery breath. Space, Enter, or End hold early lets you continue sooner."
+              text: "The exhale hold counts down and automatically starts the recovery breath. Press Space, Enter, or End hold early to continue sooner."
               color: root.dim
               font.family: root.fontFamily
               font.pixelSize: Style.font.bodySmall
@@ -925,20 +932,6 @@ Panel {
               }
 
               NumberField {
-                id: powerRecoveryField
-                label: "Recovery hold after inhale"
-                from: 5
-                to: 30
-                value: root.editorPowerRecoveryHold
-                fieldWidth: Style.space(110)
-                foreground: root.foreground
-                accent: Color.accent
-                fontFamily: root.fontFamily
-                onModified: function(v) { root.editorPowerRecoveryHold = v }
-              }
-
-
-              NumberField {
                 id: powerRetentionField
                 label: "First hold after exhale (seconds)"
                 from: 1
@@ -952,8 +945,21 @@ Panel {
               }
 
               NumberField {
+                id: powerRecoveryField
+                label: "Recovery hold after inhale (seconds)"
+                from: 5
+                to: 30
+                value: root.editorPowerRecoveryHold
+                fieldWidth: Style.space(110)
+                foreground: root.foreground
+                accent: Color.accent
+                fontFamily: root.fontFamily
+                onModified: function(v) { root.editorPowerRecoveryHold = v }
+              }
+
+              NumberField {
                 id: powerRetentionIncreaseField
-                label: "Exhale hold increase per round"
+                label: "Exhale hold increase per round (seconds)"
                 from: 0
                 to: 60
                 value: root.editorPowerRetentionIncrease

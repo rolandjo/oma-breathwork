@@ -3,6 +3,7 @@
   "id": "oma.breathwork",
   "name": "Breathwork",
   "version": "1.0.4",
+  "author": "Roland Jo",
   "license": "MIT",
   "description": "A customizable guided-breathing pacer for Omarchy with built-in and named personal protocols, session tracking, and a daily streak.",
   "kinds": [
@@ -79,8 +80,19 @@
       },
       {
         "key": "pattern",
-        "type": "string",
-        "label": "Default breathing pattern (box, 478, coherent, equal, extended, triangle, power, custom, sigh)",
+        "type": "enum",
+        "label": "Default breathing pattern",
+        "options": [
+          "box",
+          "478",
+          "coherent",
+          "equal",
+          "extended",
+          "triangle",
+          "power",
+          "custom",
+          "sigh"
+        ],
         "defaultValue": "box"
       },
       {
@@ -103,8 +115,13 @@
       },
       {
         "key": "visualStyle",
-        "type": "string",
-        "label": "Session visual (orb, rings, bar)",
+        "type": "enum",
+        "label": "Session visual",
+        "options": [
+          "orb",
+          "rings",
+          "bar"
+        ],
         "defaultValue": "orb"
       },
       {
@@ -146,7 +163,7 @@
       {
         "key": "powerRetentionIncrease",
         "type": "integer",
-        "label": "Power Breathe: exhale hold increase per round",
+        "label": "Power Breathe: exhale hold increase per round (seconds)",
         "min": 0,
         "max": 60,
         "step": 1,
@@ -155,7 +172,7 @@
       {
         "key": "customIn",
         "type": "integer",
-        "label": "Custom protocol: inhale seconds",
+        "label": "Custom protocol: inhale (seconds)",
         "min": 1,
         "max": 30,
         "step": 1,
@@ -164,7 +181,7 @@
       {
         "key": "customHoldIn",
         "type": "integer",
-        "label": "Custom protocol: hold after inhale seconds",
+        "label": "Custom protocol: hold after inhale (seconds)",
         "min": 0,
         "max": 30,
         "step": 1,
@@ -173,7 +190,7 @@
       {
         "key": "customOut",
         "type": "integer",
-        "label": "Custom protocol: exhale seconds",
+        "label": "Custom protocol: exhale (seconds)",
         "min": 1,
         "max": 30,
         "step": 1,
@@ -182,7 +199,7 @@
       {
         "key": "customHoldOut",
         "type": "integer",
-        "label": "Custom protocol: hold after exhale seconds",
+        "label": "Custom protocol: hold after exhale (seconds)",
         "min": 0,
         "max": 30,
         "step": 1,

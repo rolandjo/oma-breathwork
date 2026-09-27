@@ -32,7 +32,11 @@ ShellRoot {
     if (decimal.field.valueFromText(decimal.field.textFromValue(55, decimal.field.locale), decimal.field.locale) !== 55)
       throw new Error("Decimal roundtrip failed")
     widget.loadEditorFromPattern("sigh")
+    if (widget.editorSourcePatternKey !== "sigh") throw new Error("Editor lost the selected built-in protocol")
     if (widget.editorInhale !== 3 || widget.editorTopUp !== 1 || widget.editorExhale !== 6) throw new Error("Sigh editor lost a phase")
+    widget.newProtocol()
+    if (widget.editorSourcePatternKey !== "") throw new Error("New protocol still looks like a selected built-in protocol")
+    widget.loadEditorFromPattern("sigh")
     overlay.pattern = Model.patternFromData(Model.pattern("sigh"))
     overlay.getReadySecs = 0
     overlay.startedAt = 1000
